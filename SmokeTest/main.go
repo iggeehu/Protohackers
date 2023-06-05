@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"log"
 
@@ -11,19 +10,15 @@ import (
 )
 
 func main() {
-	arguments := os.Args
-	if len(arguments) == 1 {
-		fmt.Println("Please provide a port number!")
-		return
-	}
 
-	PORT := ":" + arguments[1]
+	PORT := ":10000"
 	l, err := net.Listen("tcp4", PORT)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer l.Close()
 
+	fmt.Println("Server is listening.")
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -36,8 +31,8 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	fmt.Printf("Serving %s\n", conn.RemoteAddr().String())
-	packet := make([]byte, 4096)
-	tmp := make([]byte, 4096)
+	packet := make([]byte, 0)
+	tmp := make([]byte, 1)
 	defer conn.Close()
 	for {
 		_, err := conn.Read(tmp)
@@ -50,7 +45,7 @@ func handleConnection(conn net.Conn) {
 		}
 		packet = append(packet, tmp...)
 	}
-	num, _ := conn.Write(packet)
-	fmt.Printf("Wrote back %d bytes, the payload is %s\n", num, string(packet))
+	conn.Write(packet)
+	fmt.Printf("message is %s", string(packet))
 
 }

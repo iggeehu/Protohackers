@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	HOST = "localhost"
-	PORT = "3333"
+	HOST = "188.93.149.98"
+	PORT = "10000"
 	TYPE = "tcp"
 )
 
@@ -40,13 +40,16 @@ func main() {
 		println("Reading data...")
 		temp := make([]byte, 4096)
 		_, err = conn.Read(temp)
+
 		if err != nil {
 			if err == io.EOF {
-				break
+				println("End Of File")
+			} else {
+				println("Read data failed:", err.Error())
 			}
-			println("Read data failed:", err.Error())
-			os.Exit(1)
+			break
 		}
+
 		received = append(received, temp...)
 	}
 
