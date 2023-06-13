@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
-
 	"log"
-
 	"net"
+	"reflect"
 )
 
 func main() {
@@ -32,10 +32,11 @@ func main() {
 func handleConnection(conn net.Conn) {
 	fmt.Printf("Serving %s\n", conn.RemoteAddr().String())
 	packet := make([]byte, 0)
-	tmp := make([]byte, 1)
+	tmp:=make([]byte, 1024)
 	defer conn.Close()
-	for {
-		_, err := conn.Read(tmp)
+	
+	for{
+		n, err := conn.Read(tmp)
 		if err != nil {
 			if err != io.EOF {
 				fmt.Println("read error:", err)
@@ -43,11 +44,39 @@ func handleConnection(conn net.Conn) {
 			println("END OF FILE")
 			break
 		}
-		packet = append(packet, tmp...)
+		packet = append(packet, tmp[:n]...)
 	}
-	conn.Write(packet)
-	fmt.Printf("message is %s", string(packet))
-}
+
+	if !json.Valid(packet) {
+		conn.Write([]byte("Malformed JSON"))	
+		fmt.Println("packet is not JSON")
+		conn.Close()
+	} else{
+		fmt.Println("packet is JSON")
+		//decode JSON object in packet
+		obj:=make(map[string]interface{})
+		err:=json.Unmarshal(packet, &obj)
+		methodVal, methodOk:=obj["Method"]
+		numberVal, numberOk:=obj["Prime"]
+
+		if err!=nil{
+		  fmt.Println(err)
+		}
+
+
+		if !methodOk || !numberOk || methodVal!="isPrime"||
+		reflect.TypeOf(numberVal).String()!= "float64" {
+			conn.Write([]byte("Malformed JSON"))
+			conn.Close()
+		}else{
+		response:=make(map[string]interface{})
+		response["Prime"]=isPrime(int(numberVal.(float64)))
+		response["Method"]="isPrime"
+		jsonResponse, _:=json.Marshal(response)
+		conn.Write(jsonResponse)
+		}
+		}	
+	}
 
 func isPrime(num int) bool {
 	for i := 2; i < num; i++ {
@@ -56,3 +85,4 @@ func isPrime(num int) bool {
 		}
 	}
 	return true}
+
