@@ -31,7 +31,8 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	fmt.Printf("Serving %s\n", conn.RemoteAddr().String())
-		
+	defer conn.Close()
+	for{
 		packet := make([]byte, 0)
 		tmp:=make([]byte, 1024)
 		for{
@@ -44,7 +45,7 @@ func handleConnection(conn net.Conn) {
 			}
 			packet = append(packet, tmp[:n]...)
 		}
-		if(len(packet)==0){ continue }
+
 
 		fmt.Printf("message is %s", string(packet))
 
@@ -60,7 +61,7 @@ func handleConnection(conn net.Conn) {
 			err:=json.Unmarshal(packet, &obj)
 			methodVal, methodOk:=obj["Method"]
 			numberVal, numberOk:=obj["Prime"]
-
+			fmt.Println(obj)
 			if err!=nil{
 				fmt.Println(err)
 			}
@@ -75,12 +76,12 @@ func handleConnection(conn net.Conn) {
 			response["Prime"]=isPrime(int(numberVal.(float64)))
 			response["Method"]="isPrime"
 			jsonResponse, _:=json.Marshal(response)
+			fmt.Println(string(jsonResponse))
 			conn.Write(jsonResponse)
 			}
-			}	
-		
-		
+		}	
 	}
+}
 
 func isPrime(num int) bool {
 	for i := 2; i < num; i++ {
