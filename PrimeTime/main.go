@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"reflect"
@@ -30,39 +30,24 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	messageCount:=0
 	fmt.Printf("Serving %s\n", conn.RemoteAddr().String())
 	defer conn.Close()
-	//each iteration is a new request
+	scn:=bufio.NewScanner(conn)
 	for{
-		packet := make([]byte, 0)
-		tmp:=make([]byte, 1024)
-		for{
-			n, err := conn.Read(tmp)
-			//if there is an error
-			if err != nil {
-				//if EOF, handle packet
-				if err == io.EOF {
-					if(len(packet)!=0){
-						messageCount++
-						fmt.Println("END OF FILE. Message is",  string(packet))
-						fmt.Println("Message count is", messageCount)
-						connstat:=respondToPacket(packet, conn)
-						if(connstat==1){
-							fmt.Println("Connection closed")
-							return
-							}
-					}
-				//if other error
-			}else{
-				fmt.Println("read error:", err)
-				}
-				break
+	
+		packet:=make([]byte, 0)
+		for scn.Scan(){
+				packet=append(packet, scn.Bytes()...)
 			}
-			packet = append(packet, tmp[:n]...)
+		
+		if(len(packet)!=0){
+			connstat:=respondToPacket(packet, conn)
+			if(connstat==1){
+				fmt.Println("conn closed")
+			}
 		}
-	}
-}
+}}
+
 
 
 func isPrime(num int) bool {
@@ -100,11 +85,13 @@ func respondToPacket(packet []byte, conn net.Conn) int {
 			conn.Close()
 			return 1
 		}else{
-		response:=make(map[string]interface{})
-		response["Prime"]=isPrime(int(numberVal.(float64)))
-		response["Method"]="isPrime"
-		jsonResponse, _:=json.Marshal(response)
-		conn.Write(jsonResponse)
-		return 0
+			fmt.Println("Packet is JSON and well-formed")
+			response:=make(map[string]interface{})
+			response["Prime"]=isPrime(int(numberVal.(float64)))
+			response["Method"]="isPrime"
+			fmt.Println("response is", response)
+			jsonResponse, _:=json.Marshal(response)
+			conn.Write(jsonResponse)
+			return 0
 		}
 	}}
