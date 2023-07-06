@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -27,7 +28,7 @@ func main() {
 
 	defer conn.Close()
 
-	packet := []byte(`{"Method":"isPrime","Prime":"7"}`)
+	packet := []byte(`{"method":"isPrime","number":1997}`)
 	_, err = conn.Write(packet)
 	if err != nil {
 		println("Write data failed:", err.Error())
@@ -35,6 +36,7 @@ func main() {
 	}
 	//new line of code
 	conn.CloseWrite()
+	fmt.Println("Write to server = ", string(packet))
 
 	received := make([]byte, 0)
 	for {
